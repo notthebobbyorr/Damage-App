@@ -1,0 +1,12 @@
+# R and environment files
+.Rhistory
+.RData
+.Rproj.user
+.Renviron
+
+# Data outputs
+data/
+*.csv
+
+# Deployment
+shinyapps/
