@@ -1,5 +1,0 @@
-PATH="${RTOOLS40_HOME}\usr\bin;${PATH}"
-DB_USER="rorr"
-DB_PASS="Kyle#12Schwarber"
-DB_HOST="scully.baseballprospectus.com"
-DB_DATABASE="cage"
