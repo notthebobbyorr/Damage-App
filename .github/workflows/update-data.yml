@@ -48,6 +48,11 @@ jobs:
 
       - name: Run Grand Poobah Script
         run: Rscript "Grand Poobah Script.R"
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_DATABASE: ${{ secrets.DB_DATABASE }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
 
       - name: Commit and push updated data
         run: |
