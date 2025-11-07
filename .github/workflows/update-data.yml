@@ -38,7 +38,7 @@ jobs:
            Rscript -e "install.packages('pak', repos = 'https://cloud.r-project.org')"
            Rscript -e "pak::pkg_install(c('remotes','data.table','here',
            'tidyverse','httr','jsonlite','shiny','rsconnect','sessioninfo',
-           'xgboost','RPostgres','mgcv'))"
+           'xgboost','RPostgres','mgcv','DBI'))"
 
       - name: Install CatBoost manually
         env:
