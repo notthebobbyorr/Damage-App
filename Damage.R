@@ -27,30 +27,24 @@ library(DT)
 library(bslib)
 library(gridExtra)
 library(ggcorrplot)
+library(here)
 
 
 # load data
-setwd("C:/Users/orrro/Documents/Github/Damage-App/data")
+# --- Load data (project-relative paths, no setwd()) ---
+damage_df   <- fread(here("data", "damage_pos_2021_2024.csv"))
 
-damage_df <- read.csv('damage_pos_2021_2024.csv')
+damage_df <- damage_df %>%
+  filter(!is.na(season))  
 
-damage_df %>% filter(season != "NA") -> damage_df
-
-hitter_pct <- read.csv('hitter_pctiles.csv')
-
-pitcher_df <- read.csv('pitcher_stuff_new.csv')
-
-pitcher_pct <- read.csv('pitcher_pctiles.csv')
-
-hitting_avg <- read.csv('new_hitting_lg_avg.csv')
-
-pitching_avg <- read.csv('new_lg_stuff.csv')
-
-team_damage <- read.csv('new_team_damage.csv')
-
-team_stuff <- read.csv('new_team_stuff.csv')
-
-pitch_types <- fread('new_pitch_types.csv')
+hitter_pct  <- fread(here("data", "hitter_pctiles.csv"))
+pitcher_df  <- fread(here("data", "pitcher_stuff_new.csv"))
+pitcher_pct <- fread(here("data", "pitcher_pctiles.csv"))
+hitting_avg <- fread(here("data", "new_hitting_lg_avg.csv"))
+pitching_avg <- fread(here("data", "new_lg_stuff.csv"))
+team_damage <- fread(here("data", "new_team_damage.csv"))
+team_stuff  <- fread(here("data", "new_team_stuff.csv"))
+pitch_types <- fread(here("data", "new_pitch_types.csv"))
 
 pitch_types %>%
   filter(!is.na(season)) %>%
@@ -59,17 +53,15 @@ pitch_types %>%
                                  pitch_tag %in% c('CH', 'FS') ~ 'OFF',
                                  T ~ 'OTHER')) -> pitch_types
 
-pitch_types_pct <- fread('pitch_types_pctiles.csv')
+pitch_types_pct <- fread(here("data", 'pitch_types_pctiles.csv'))
 
-setwd("C:/Users/orrro/Documents/Github/Damage-App/data_static")
+hitting_cor <- fread(here("data_static", 'hitting_cor.csv'))
 
-hitting_cor <- read.csv('hitting_cor.csv')
+pitching_cor <- fread(here("data_static", 'pitching_cor2.csv'))
 
-pitching_cor <- read.csv('pitching_cor2.csv')
-
-PA_est <- readRDS('PA_estimate.rds')
-R_est <- readRDS('runs_per_pa.rds')
-RBI_est <- readRDS('rbi_per_pa.rds')
+PA_est <- readRDS(here("data_static", 'PA_estimate.rds'))
+R_est <- readRDS(here("data_static", 'runs_per_pa.rds'))
+RBI_est <- readRDS(here("data_static", 'rbi_per_pa.rds'))
 
 
 ui <- navbarPage(title = "Profiles",
