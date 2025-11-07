@@ -8,6 +8,7 @@ models/
 # Data outputs
 data/
 *.csv
+*.rds
 
 # Deployment
 shinyapps/
