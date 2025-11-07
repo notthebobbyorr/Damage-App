@@ -18,7 +18,7 @@ jobs:
       - name: Copy local models folder (Windows PowerShell)
         shell: powershell
         run: |
-          $src  = "C:\Users\orrro\Documents\Damage-App\models"
+          $src  = "C:\Users\orrro\Documents\GitHub\Damage-App\models"
           $dest = Join-Path $env:GITHUB_WORKSPACE "models"
       
           Write-Host "Source: $src"
