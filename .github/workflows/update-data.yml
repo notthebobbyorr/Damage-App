@@ -22,11 +22,18 @@ jobs:
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: |
+            any::remotes
+            any::data.table
+            any::here
             tidyverse
             httr
             jsonlite
             shiny
             rsconnect
+
+      - name: Install CatBoost manually
+        run: |
+          Rscript -e 'remotes::install_github("catboost/catboost", subdir = "catboost/R-package")'
 
       - name: Run Grand Poobah Script
         run: Rscript "Grand Poobah Script.R"
