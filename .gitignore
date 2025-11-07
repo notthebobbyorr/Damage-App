@@ -3,6 +3,7 @@
 .RData
 .Rproj.user
 .Renviron
+models/
 
 # Data outputs
 data/

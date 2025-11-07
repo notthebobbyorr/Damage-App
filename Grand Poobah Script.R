@@ -2,8 +2,12 @@
 start.time <- Sys.time()  
 
 require(RPostgres)
+require(here)
 require(tidyverse)
 require(data.table)
+require(catboost)
+require(xgboost)
+require(mgcv)
 
 user <- Sys.getenv("DB_USER")
 pass <- Sys.getenv("DB_PASS")
@@ -17,25 +21,6 @@ con <- DBI::dbConnect(
   host = host,
   dbname = dbase
 )
-
-# now the fxn for fetching game ids for pull
-get_game_pks <- function(season,
-                         level_ids = c(1, 11, 14, 16)){
-
-  api_call <- paste0("http://statsapi.mlb.com/api/v1/schedule?sportId=", paste(level_ids, collapse = ','),
-                     "&season=", paste(season, collapse = ','))
-
-  payload <- jsonlite::fromJSON(api_call, flatten = T)
-
-  payload <- payload$dates$games %>%
-    plyr:: rbind.fill() %>% #dplyr::select(gamePk) %>%
-    dplyr::rename(game_pk = gamePk)
-
-  return(payload)
-}
-
-# grabbing gamepks for mlbapi.battedball and mlbapi.baseout
-test <- get_game_pks(season = c(2025), level_ids = c(1, 11, 14, 16))
 
 # querying PI & MLBAPI for season data
 query  <-"select season, game_pk, game_date, game_type, level_id,
@@ -172,16 +157,6 @@ nu %>% mutate(
 cent_height = 2.5
 cent_wide = 0
 
-z_bottom <- 1.7
-z_top <- 3.35
-x <- c(-.71,.71,.71,-.71,-.71)
-#z_top <- .55 #mean(nu$pi_zone_top, na.rm = T)
-z_top <- mean(nu$pi_zone_top, na.rm = T)
-#z_bottom <- .28 #mean(nu$pi_zone_bottom, na.rm = T)
-z_bottom <- mean(nu$pi_zone_bottom, na.rm = T)
-z <- c(z_bottom,z_bottom,z_top,z_top,z_bottom)
-xz <- tibble(x, z)
-
 nu %>%
   mutate(
     zone_center = (pi_zone_top + pi_zone_bottom)/2) -> nu
@@ -271,15 +246,10 @@ nu %>%
   ) -> nu
 
 # using my models
-
-setwd("C:/Users/orrro/Documents/R/My Fantasy Tools")
-require(catboost)
-require(xgboost)
-
 # exp linear weight model
-new.xwt <- xgb.load('updated_XWT')
+new.xwt <- xgb.load(here("models", 'updated_XWT'))
 
-xgb.lwt <- readRDS('XWT MODEL.rds')
+xgb.lwt <- readRDS(here("models",'XWT MODEL.rds'))
 xwt.feats <- c('exit_velo', 'launch_angle', 'spray_angle_adj')
 
 #new.xgb.lwt <- xgb.load('xgb.lwt.2.rds')
@@ -297,7 +267,7 @@ nu %>%
 
 
 # my exp woba metric
-xgb.woba <- readRDS('xgb.woba.rds')
+xgb.woba <- readRDS(here("models",'xgb.woba.rds'))
 
 # input
 nu$xgb.woba <- as.numeric(predict(xgb.woba, newdata = nu %>% 
@@ -316,10 +286,8 @@ nu %>%
 
 ####
 # damage
-damage_mod <- readRDS('damage_rate_model.rds')
+damage_mod <- readRDS(here("models", 'damage_rate_model.rds'))
 
-# load pckg
-require(mgcv)
 
 # create rounded spray with correct feature name
 nu$adjusted_spray <- round(nu$spray_angle_adj, 0)
@@ -345,7 +313,7 @@ nu %>%
   ) -> nu
 
 # team codes
-team_ids <- fread('team_ids.csv')
+team_ids <- fread(here("data_static", 'team_ids.csv'))
 
 # joining to create team filters
 nu %>% mutate(
@@ -414,8 +382,7 @@ nu <- nu %>%
   ))
 
 # savant arm angles
-setwd("C:/Users/orrro/Documents/R/Repo")
-aa <- readRDS('new_arm_angle_fmla.rds') # new one - maybe need to rerun stuff models with this slight update
+aa <- readRDS(here("models", 'new_arm_angle_fmla.rds')) # new one - maybe need to rerun stuff models with this slight update
 nu$ball_angle <- predict(aa, newdata = nu, type = 'response')
 
 
@@ -572,19 +539,14 @@ nu %>%
 # setting count to a factor for prediction
 nu$count <- as.factor(nu$count)
 
-setwd("C:/Users/orrro/Documents/R/My Fantasy Tools/SEAGER")
-
-
 # this is the step for loading a pre-trained model - SEAGER
-bam.xwt.gain <- readRDS('decision_values_model.rds')
+bam.xwt.gain <- readRDS(here("models",'decision_values_model.rds'))
 
 # inputting the swing-take values with trained/loaded model
 nu$swing.decision.xwt <- predict(bam.xwt.gain, 
                                  newdata = nu,
                                  type = 'response')
 
-
-setwd("C:/Users/orrro/Documents/R/My Fantasy Tools/MyStuff Files")
 # input values are assuming a swing, so we need to correct for a take:
 nu %>%
   mutate(
@@ -627,7 +589,6 @@ nu %>%
   ) -> nu
 
 # adding in stuff and whiff probs for the pitchers
-setwd("C:/Users/orrro/Documents/R/My Fantasy Tools/MyStuff Files")
 
 # loading models
 zone.bip <- catboost.load_model('catboost.zone.bip')
@@ -636,9 +597,6 @@ zone.rv <- catboost.load_model('catboost.zone.rv')
 dmg.pitching <- catboost.load_model('dmg.pitching.catboost')
 bip.pitching <- catboost.load_model('bip.pitching.catboost')
 hr_xgb <- xgb.load('hr_model')
-
-require(catboost)
-require(xgboost)
 
 # set up catboost pool with required features for models
 target <- 'bip'
@@ -722,9 +680,9 @@ nu$xgb.hr <- predict(hr_xgb, newdata = nu %>%
 nu$xgb.hr <- ifelse(nu$xgb.hr < 0, 0, nu$xgb.hr)
 
 # newer stuff models
-rwt.2s.cat <- catboost.load_model('starter_cat_stuff_nov8') #catboost.load_model('new_catboost_stuff_Oct16') 
-putaway.cat <- catboost.load_model('new_putaway_nov11') #catboost.load_model('new_catboost_putaway_Oct23')
-whiff.prob <- catboost.load_model('all_vars_whiff_prob_2str') #catboost.load_model('whiff.prob_model')
+rwt.2s.cat <- catboost.load_model('starter_cat_stuff_nov8')
+putaway.cat <- catboost.load_model('new_putaway_nov11')
+whiff.prob <- catboost.load_model('all_vars_whiff_prob_2str')
 
 target <- 'neut_euc_rwt_2s'
 
@@ -1027,12 +985,9 @@ positions %>%
   left_join(damage_df, by = c('batter_mlbid', 'level_id', 'season')) -> pos_df
 
 # save
-setwd("C:/Users/orrro/Documents/R/Repo")
-fwrite(pos_df, '2025_hitters.csv')
+fwrite(pos_df, here("data", '2025_hitters.csv'))
 
 ###### Pitcher data
-setwd("C:/Users/orrro/Documents/R/My Fantasy Tools/MyStuff Files")
-
 nu %>% 
   group_by(pitcher_mlbid, level_id, pitching_code, season) %>%
   mutate(G = length(unique(game_pk)),
@@ -1128,8 +1083,7 @@ nu %>%
   relocate(c(K, K_BB, RA9, WHIP, ISO, wOBACON, std.ZQ:std.NRV), .after = IP) -> stuff_df
 
 # save
-setwd("C:/Users/orrro/Documents/R/Repo")
-fwrite(stuff_df, '2025_pitchers.csv')
+fwrite(stuff_df, here("data",'2025_pitchers.csv'))
 
 
 # individual pitches now
@@ -1213,15 +1167,12 @@ nu %>%
   relocate(c(SwStr, std.ZQ, Ball_pct, Chase, K, K_BB, ISO, wOBACON), .after = TBF) -> pitch_types_stuff_df
 
 # save
-setwd("C:/Users/orrro/Documents/R/Repo")
-fwrite(pitch_types_stuff_df, '2024_ind_pitches.csv')
+fwrite(pitch_types_stuff_df, here("data",'2024_ind_pitches.csv'))
 
 #### appending to the data sources for the app
-setwd("C:/Users/orrro/Documents/R/Shiny/Damage")
-
 ## updating hitters
 
-old_df <- fread('damage_pos_until_2024.csv')
+old_df <- fread(here("data_static",'damage_pos_until_2024.csv'))
 
 pos_df %>%
   dplyr::select(UT, C, X1B, X2B, X3B, SS, OF, P, batter_mlbid, hitter_name, level_id,
@@ -1244,11 +1195,11 @@ new_df <- rbind(pos_df_1, old_df)
 
 new_df$hitter_name <- iconv(new_df$hitter_name, from = 'UTF-8', to = 'ASCII//TRANSLIT')
 
-fwrite(new_df, 'damage_pos_2021_2024.csv')
+fwrite(new_df, here("data",'damage_pos_2021_2024.csv'))
 
 ### pitchers
 
-old_pitcher_df <- fread('stuff_until_2024.csv') 
+old_pitcher_df <- fread(here("data_static",'stuff_until_2024.csv')) 
 
 old_pitcher_df %>%
   dplyr::select(level_id, TBF_per_G, pitcher_hand, pitcher_mlbid, name, season, pitching_code,
@@ -1270,11 +1221,11 @@ new_pitcher_df <- rbind(stuff_df_1, old_pitcher_df)
 
 new_pitcher_df$name <- iconv(new_pitcher_df$name, from = 'UTF-8', to = 'ASCII//TRANSLIT')
 
-fwrite(new_pitcher_df, 'pitcher_stuff_new.csv')
+fwrite(new_pitcher_df, here("data",'pitcher_stuff_new.csv'))
 
 ### pitch types
 
-old_pitch_types <- fread('pitch_types_until_2024.csv')
+old_pitch_types <- fread(here("data_static",'pitch_types_until_2024.csv'))
 
 old_pitch_types %>%
   dplyr::select(name, level_id, pitcher_mlbid, pitcher_hand, pitching_code, season, pitches, pitch_tag, pct,
@@ -1290,11 +1241,11 @@ pitch_types_new_df <- rbind(pitch_types_new, old_pitch_types)
 
 pitch_types_new_df$name <- iconv(pitch_types_new_df$name, from = 'UTF-8', to = 'ASCII//TRANSLIT')
 
-fwrite(pitch_types_new_df, 'new_pitch_types.csv')
+fwrite(pitch_types_new_df, here("data",'new_pitch_types.csv'))
 
 
 ##### constructing team averages and inputting them into the app
-old_team_dmg <- fread('team_damage_until_2024.csv')
+old_team_dmg <- fread(here("data_static",'team_damage_until_2024.csv'))
 
 old_team_dmg %>%
   dplyr::select(hitting_code, level_id, season, PA, bbe, damage_rate, EV90th, pull_FB_pct,
@@ -1384,11 +1335,11 @@ team_damage %>%
 
 new_team_damage <- rbind(team_damage, old_team_dmg)
 
-fwrite(new_team_damage, 'new_team_damage.csv')
+fwrite(new_team_damage, here("data",'new_team_damage.csv'))
 
 ### now team pitching
 
-old_team_stuff <- fread('team_stuff_until_2024.csv')
+old_team_stuff <- fread(here("data_static",'team_stuff_until_2024.csv'))
 
 old_team_stuff %>%
   dplyr::select(level_id, season, pitching_code, IP, std.ZQ, std.DMG, std.NRV, 
@@ -1488,7 +1439,7 @@ team_stuff %>%
 
 new_team_stuff <- rbind(team_stuff, old_team_stuff)
 
-fwrite(new_team_stuff, 'new_team_stuff.csv')
+fwrite(new_team_stuff, here("data",'new_team_stuff.csv'))
 
 #####
 
@@ -1576,7 +1527,7 @@ lg_damage %>%
          ) -> lg_damage
 
 # load old
-old_lg_dmg <- fread('hitting_lg_avg_until_2024.csv')
+old_lg_dmg <- fread(here("data_static",'hitting_lg_avg_until_2024.csv'))
 
 old_lg_dmg %>%
   dplyr::select(level_id, season, PA, bbe, damage_rate, EV90th, pull_FB_pct,
@@ -1585,10 +1536,10 @@ old_lg_dmg %>%
          ) -> old_lg_dmg
 
 new_lg_dmg <- rbind(lg_damage, old_lg_dmg)
-fwrite(new_lg_dmg, 'new_hitting_lg_avg.csv')
+fwrite(new_lg_dmg, here("data",'new_hitting_lg_avg.csv'))
 
 ### league pitching
-old_lg_stuff <- fread('lg_stuff_until_2024.csv')
+old_lg_stuff <- fread(here("data_static",'lg_stuff_until_2024.csv'))
 
 nu %>%
   group_by(season) %>%
@@ -1678,7 +1629,7 @@ old_lg_stuff %>%
          ) -> old_lg_stuff
 
 new_lg_stuff <- rbind(lg_stuff, old_lg_stuff)
-fwrite(new_lg_stuff, 'new_lg_stuff.csv')
+fwrite(new_lg_stuff, here("data",'new_lg_stuff.csv'))
 
 
 ##### clear unnecessary models and pulls from environment
@@ -1687,8 +1638,6 @@ rm(bb, outs, ask_mlb, team_ids, test, pHR_pred, phr_bbe_predictor, hit_composite
    bam.xwt.gain)
 
 # add in percentiles
-setwd("C:/Users/orrro/Documents/R/Shiny/Damage")
-
 # percentile function 
 pctile <- function(x){
   y = round((rank(x) - 1) / (n() - 1) * 100, 0)
@@ -1720,7 +1669,7 @@ new_df %>%
 
 new_df_2$hitter_name <- iconv(new_df_2$hitter_name, from = 'UTF-8', to = 'ASCII//TRANSLIT')
 
-fwrite(new_df_2, 'hitter_pctiles.csv')
+fwrite(new_df_2, here("data",'hitter_pctiles.csv'))
 
 
 # pitcher percentiles
@@ -1748,7 +1697,7 @@ new_pitcher_df %>%
 
 new_pitcher_df_2$name <- iconv(new_pitcher_df_2$name, from = 'UTF-8', to = 'ASCII//TRANSLIT')
 
-fwrite(new_pitcher_df_2, 'pitcher_pctiles.csv')
+fwrite(new_pitcher_df_2, here("data",'pitcher_pctiles.csv'))
 
 
 # individual pitch type percentiles
@@ -1780,7 +1729,7 @@ pitch_types_new_df %>%
 
 pitch_types_new_df_2$name <- iconv(pitch_types_new_df_2$name, from = 'UTF-8', to = 'ASCII//TRANSLIT')
 
-fwrite(pitch_types_new_df_2, 'pitch_types_pctiles.csv')
+fwrite(pitch_types_new_df_2, here("data",'pitch_types_pctiles.csv'))
 
 end.time <- Sys.time()
 
