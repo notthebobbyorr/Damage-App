@@ -31,7 +31,6 @@ library(here)
 
 
 # load data
-# --- Load data (project-relative paths, no setwd()) ---
 damage_df   <- fread(here("data", "damage_pos_2021_2024.csv"))
 
 damage_df <- damage_df %>%
@@ -326,6 +325,8 @@ ui <- navbarPage(title = "Profiles",
                                       mainPanel(
                                         DTOutput('pitch_cor')
                                       ))
+                             tabPanel('Post-Credits Teaser',
+                                       h3('More on the way...'),
                              )
                              
                   )
