@@ -1,6 +1,4 @@
 #
-# Change date back once back in town
-#
 # This is a Shiny web application. You can run the application by clicking
 # the 'Run App' button above.
 #
@@ -32,8 +30,7 @@ library(ggcorrplot)
 
 
 # load data
-
-#damage_df <- read.csv('damage_positions_2021_2023.csv')
+setwd("C:/Users/orrro/Documents/Github/Damage-App/data")
 
 damage_df <- read.csv('damage_pos_2021_2024.csv')
 
@@ -41,29 +38,17 @@ damage_df %>% filter(season != "NA") -> damage_df
 
 hitter_pct <- read.csv('hitter_pctiles.csv')
 
-#pitcher_df <- read.csv('pitcher_stuff.csv') #read.csv('MyStuff_2020_2023.csv')
-
 pitcher_df <- read.csv('pitcher_stuff_new.csv')
 
 pitcher_pct <- read.csv('pitcher_pctiles.csv')
 
-#hitting_avg <- read.csv('hitting_lg_avgs.csv')
-
 hitting_avg <- read.csv('new_hitting_lg_avg.csv')
-
-#pitching_avg <- read.csv('lg_stuff.csv') #read.csv('pitching_lg_avgs.csv')
 
 pitching_avg <- read.csv('new_lg_stuff.csv')
 
-#team_damage <- read.csv('team_damage.csv')
-
 team_damage <- read.csv('new_team_damage.csv')
 
-#team_stuff <- read.csv('team_stuff.csv')
-
 team_stuff <- read.csv('new_team_stuff.csv')
-
-#pitch_types <- read.csv('pitch_type_stuff.csv')  #read.csv('pitch_types.csv')
 
 pitch_types <- fread('new_pitch_types.csv')
 
@@ -75,6 +60,8 @@ pitch_types %>%
                                  T ~ 'OTHER')) -> pitch_types
 
 pitch_types_pct <- fread('pitch_types_pctiles.csv')
+
+setwd("C:/Users/orrro/Documents/Github/Damage-App/data_static")
 
 hitting_cor <- read.csv('hitting_cor.csv')
 
