@@ -15,25 +15,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Copy local models folder (PowerShell)
-        shell: pwsh
+      - name: Copy local models folder (Windows PowerShell)
+        shell: powershell
         run: |
-          $src  = 'C:\Users\orrro\Documents\Damage-App\models'
-          $dest = Join-Path $env:GITHUB_WORKSPACE 'models'
+          $src  = "C:\Users\orrro\Documents\Damage-App\models"
+          $dest = Join-Path $env:GITHUB_WORKSPACE "models"
       
           Write-Host "Source: $src"
           Write-Host "Destination: $dest"
       
           if (Test-Path $src) {
             Write-Host "Copying models..."
-            # remove any previous destination to avoid stale files
-            if (Test-Path $dest) { Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $dest }
+            if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
             New-Item -ItemType Directory -Force -Path $dest | Out-Null
             Copy-Item -Path (Join-Path $src '*') -Destination $dest -Recurse -Force
-            Write-Host "Copy complete. Files in destination:"
+            Write-Host "✅ Copy complete. Files in destination:"
             Get-ChildItem -Path $dest -Recurse | ForEach-Object { Write-Host $_.FullName }
           } else {
-            Write-Error "Models folder not found at $src"
+            Write-Error "❌ Models folder not found at $src"
             exit 1
           }
 
