@@ -248,6 +248,12 @@ nu %>%
     )
   ) -> nu
 
+# debug lines before loading
+
+cat("here() =", here::here(), "\n")
+print(list.files(here::here("models"), full.names = TRUE))
+cat("exists(updated_XWT):", file.exists(here::here("models","updated_XWT")), "\n")
+
 # using my models
 # exp linear weight model
 new.xwt <- xgb.load(here("models", 'updated_XWT'))
