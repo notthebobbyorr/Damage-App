@@ -27,17 +27,9 @@ jobs:
 
 
       - name: Install dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: |
-            any::remotes
-            any::data.table
-            any::here
-            tidyverse
-            httr
-            jsonlite
-            shiny
-            rsconnect
+        run: |
+           Rscript -e "install.packages('pak', repos = 'https://cloud.r-project.org')"
+           Rscript -e "pak::pkg_install(c('remotes','data.table','here','tidyverse','httr','jsonlite','shiny','rsconnect'))"
 
       - name: Install CatBoost manually
         run: |
