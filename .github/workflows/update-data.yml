@@ -14,27 +14,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
-      - name: Cache R packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/R
-          key: ${{ runner.os }}-R-${{ hashFiles('**/DESCRIPTION') }}
-          restore-keys: |
-            ${{ runner.os }}-R-
-
-      - name: Install dependencies
-        run: |
-           Rscript -e "install.packages('pak', repos = 'https://cloud.r-project.org')"
-           Rscript -e "pak::pkg_install(c('remotes','data.table','here',
-           'tidyverse','httr','jsonlite','shiny','rsconnect','sessioninfo',
-           'xgboost','RPostgres','mgcv','DBI'))"
-
-      - name: Install CatBoost manually
-        env:
-          GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          Rscript -e 'remotes::install_github("catboost/catboost", subdir = "catboost/R-package", upgrade="never")'
 
       - name: Run Grand Poobah Script
         run: Rscript "Grand Poobah Script.R"
