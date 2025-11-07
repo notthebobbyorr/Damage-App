@@ -1,6 +1,3 @@
-
-start.time <- Sys.time()  
-
 require(RPostgres)
 require(here)
 require(tidyverse)
@@ -1730,12 +1727,3 @@ pitch_types_new_df %>%
 pitch_types_new_df_2$name <- iconv(pitch_types_new_df_2$name, from = 'UTF-8', to = 'ASCII//TRANSLIT')
 
 fwrite(pitch_types_new_df_2, here("data",'pitch_types_pctiles.csv'))
-
-end.time <- Sys.time()
-
-run.time <- round(end.time - start.time, 3)
-print(run.time)
-
-# 
-# library(rsconnect)
-# rsconnect::deployApp("C:/Users/orrro/Documents/R/Shiny/Damage/Damage.R")
