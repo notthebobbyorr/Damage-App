@@ -17,19 +17,9 @@ jobs:
 
       - name: Install R dependencies (App Only)
         run: |
-          install.packages('pak', repos='https://cloud.r-project.org')
-          pak::pkg_install(
-            c(
-              "shiny",
-              "data.table",
-              "dplyr",
-              "ggplot2",
-              "readr",
-              "here",
-              "DT"
-            )
-          )
-
+           Rscript -e "install.packages('pak', repos = 'https://cloud.r-project.org')"
+           Rscript -e "pak::pkg_install(c('shiny', 'data.table', 'dplyr', 'ggplot2', 'readr', 'here', 'DT'))"
+      
       - name: Deploy to shinyapps.io
         env:
           SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }}
