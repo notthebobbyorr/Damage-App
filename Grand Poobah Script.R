@@ -6,6 +6,27 @@ require(catboost)
 require(xgboost)
 require(mgcv)
 
+
+# loading models in first step to avoid complicated debug
+#
+damage_mod <- readRDS(here("models", 'damage_rate_model.rds'))
+new.xwt <- xgb.load(here("models", 'updated_XWT'))
+xgb.lwt <- readRDS(here("models",'XWT MODEL.rds'))
+xgb.woba <- readRDS(here("models",'xgb_woba.rds'))
+bam.xwt.gain <- readRDS(here("models",'decision_values_model.rds'))
+aa <- readRDS(here("models", 'new_arm_angle_fmla.rds'))
+zone.bip <- catboost.load_model('catboost_zone_bip')
+zone.damage <- catboost.load_model('zone_damage')
+zone.rv <- catboost.load_model('catboost_zone_rv')
+dmg.pitching <- catboost.load_model('dmg_pitching_catboost')
+bip.pitching <- catboost.load_model('bip_pitching_catboost')
+hr_xgb <- xgb.load('hr_model')
+rwt.2s.cat <- catboost.load_model('starter_cat_stuff_nov8')
+putaway.cat <- catboost.load_model('new_putaway_nov11')
+whiff.prob <- catboost.load_model('all_vars_whiff_prob_2str')
+
+
+# setting up SQL pull
 user <- Sys.getenv("DB_USER")
 pass <- Sys.getenv("DB_PASS")
 host <- Sys.getenv("DB_HOST")
@@ -62,7 +83,7 @@ vy0_orig as vy0,
 vz0_orig as vz0,
 x0_orig as x0,
 y0_orig as y0,
-z0_orig as z0
+  z0_orig as z0
 ,coalesce(ax_adj, ax_corr) as ax
 ,coalesce(az_adj, az_corr) as az
 ,coalesce(ay_adj, ay_corr)  as ay
@@ -242,14 +263,8 @@ nu %>%
     )
   ) -> nu
 
-# using my models
-# exp linear weight model
-new.xwt <- xgb.load(here("models", 'updated_XWT'))
-
-xgb.lwt <- readRDS(here("models",'XWT MODEL.rds'))
+# exp linear weights
 xwt.feats <- c('exit_velo', 'launch_angle', 'spray_angle_adj')
-
-#new.xgb.lwt <- xgb.load('xgb.lwt.2.rds')
 
 nu$xwt <- predict(new.xwt, newdata = nu %>% 
                     dplyr::select(all_of(xwt.feats)) %>% 
@@ -264,8 +279,6 @@ nu %>%
 
 
 # my exp woba metric
-xgb.woba <- readRDS(here("models",'xgb.woba.rds'))
-
 # input
 nu$xgb.woba <- as.numeric(predict(xgb.woba, newdata = nu %>% 
                                     dplyr::select(xgb.woba$feature_names) %>% 
@@ -283,9 +296,6 @@ nu %>%
 
 ####
 # damage
-damage_mod <- readRDS(here("models", 'damage_rate_model.rds'))
-
-
 # create rounded spray with correct feature name
 nu$adjusted_spray <- round(nu$spray_angle_adj, 0)
 
@@ -379,7 +389,6 @@ nu <- nu %>%
   ))
 
 # savant arm angles
-aa <- readRDS(here("models", 'new_arm_angle_fmla.rds')) # new one - maybe need to rerun stuff models with this slight update
 nu$ball_angle <- predict(aa, newdata = nu, type = 'response')
 
 
@@ -537,8 +546,6 @@ nu %>%
 nu$count <- as.factor(nu$count)
 
 # this is the step for loading a pre-trained model - SEAGER
-bam.xwt.gain <- readRDS(here("models",'decision_values_model.rds'))
-
 # inputting the swing-take values with trained/loaded model
 nu$swing.decision.xwt <- predict(bam.xwt.gain, 
                                  newdata = nu,
@@ -586,15 +593,6 @@ nu %>%
   ) -> nu
 
 # adding in stuff and whiff probs for the pitchers
-
-# loading models
-zone.bip <- catboost.load_model('catboost.zone.bip')
-zone.damage <- catboost.load_model('zone.damage')
-zone.rv <- catboost.load_model('catboost.zone.rv')
-dmg.pitching <- catboost.load_model('dmg.pitching.catboost')
-bip.pitching <- catboost.load_model('bip.pitching.catboost')
-hr_xgb <- xgb.load('hr_model')
-
 # set up catboost pool with required features for models
 target <- 'bip'
 
@@ -677,10 +675,6 @@ nu$xgb.hr <- predict(hr_xgb, newdata = nu %>%
 nu$xgb.hr <- ifelse(nu$xgb.hr < 0, 0, nu$xgb.hr)
 
 # newer stuff models
-rwt.2s.cat <- catboost.load_model('starter_cat_stuff_nov8')
-putaway.cat <- catboost.load_model('new_putaway_nov11')
-whiff.prob <- catboost.load_model('all_vars_whiff_prob_2str')
-
 target <- 'neut_euc_rwt_2s'
 
 new_stuff_feats <-
