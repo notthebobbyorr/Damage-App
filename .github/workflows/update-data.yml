@@ -2,7 +2,7 @@ name: Update data
 
 on:
   schedule:
-    - cron: "0 5 * * *"  # every day at 12:00 UTC
+    - cron: "0 5 * * *"  # every day at 5:00 UTC
   workflow_dispatch:      # allows manual runs too
 
 jobs:
@@ -14,6 +14,33 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Copy local models folder (Windows PowerShell)
+        shell: powershell
+        run: |
+          $folders = @(
+            @{ src  = "C:\Users\orrro\Documents\GitHub\Damage-App\models";  dest = "models" },
+            @{ src  = "C:\Users\orrro\Documents\GitHub\Damage-App\data_static";  dest = "data_static"}
+          )
+
+          foreach ($f in $folders) {
+            $src  = $f.src
+            $dest = Join-Path $env:GITHUB_WORKSPACE $f.dest
+        
+            Write-Host "Source: $src"
+            Write-Host "Destination: $dest"
+        
+            if (Test-Path $src) {
+              Write-Host "Copying $($f.dest)..."
+              if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
+              New-Item -ItemType Directory -Force -Path $dest | Out-Null
+              Copy-Item -Path (Join-Path $src '*') -Destination $dest -Recurse -Force
+              Write-Host "✅ Copy complete. Files in destination:"
+              Get-ChildItem -Path $dest -Recurse | ForEach-Object { Write-Host $_.FullName }
+            } else {
+              Write-Error "❌ Folder not found at $src"
+             }
+          }
 
       - name: Run Grand Poobah Script
         run: |
