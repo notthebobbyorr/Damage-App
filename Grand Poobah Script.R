@@ -1,3 +1,9 @@
+if (basename(getwd()) != "Damage-App") {
+  setwd(file.path(getwd(), "Damage-App"))
+}
+
+print(here::here())
+
 require(RPostgres)
 require(here)
 require(tidyverse)
