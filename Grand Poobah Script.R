@@ -12,6 +12,11 @@ require(catboost)
 require(xgboost)
 require(mgcv)
 
+# Ensure data directory exists
+if (!dir.exists(here::here("data"))) {
+  dir.create(here::here("data"), recursive = TRUE)
+}
+
 
 # loading models in first step to avoid complicated debug
 #
