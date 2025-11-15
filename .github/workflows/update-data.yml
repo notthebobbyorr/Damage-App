@@ -59,7 +59,7 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git add data/
           if (git commit -m "Auto-update data [skip ci]") {
-      git push
-    } else {
-      Write-Host "No changes to commit"
-    }
+          git push
+          } else {
+            Write-Host "No changes to commit"
+          }
