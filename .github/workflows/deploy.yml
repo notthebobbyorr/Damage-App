@@ -13,6 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install system libraries (required for curl, openssl, xml2)
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
 
