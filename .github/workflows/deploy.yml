@@ -33,4 +33,4 @@ jobs:
           SHINYAPPS_ACCOUNT: ${{ secrets.SHINYAPPS_ACCOUNT }}
         run: |
           Rscript -e "library(rsconnect); rsconnect::setAccountInfo(name='${SHINYAPPS_ACCOUNT}', token='${SHINYAPPS_TOKEN}', secret='${SHINYAPPS_SECRET}')"
-          Rscript -e "rsconnect::deployApp('.', appName='Damage', account='${SHINYAPPS_ACCOUNT}')"
+          Rscript -e "rsconnect::deployApp('.', appName='Damage', account='${SHINYAPPS_ACCOUNT}', forceUpdate=TRUE)"
